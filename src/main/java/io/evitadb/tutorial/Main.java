@@ -22,7 +22,11 @@ public class Main {
                         .build()
         );
 
-        System.out.println("evitaDB connected ... discovering catalogs:");
+        System.out.println("evitaDB connected ... creating new catalog `evita-tutorial`:");
+        evita.defineCatalog("evita-tutorial")
+                .withDescription("This is a tutorial catalog.")
+                .updateViaNewSession(evita);
+        System.out.println("Catalog `evita-tutorial` created, listing all catalogs:");
         final Set<String> catalogNames = evita.getCatalogNames();
         if (catalogNames.isEmpty()) {
             System.out.println("\t- No catalogs found");
