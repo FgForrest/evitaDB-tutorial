@@ -32,7 +32,7 @@ public class Main {
         evita.defineCatalog("evita-tutorial")
                 .withDescription("This is a tutorial catalog.")
                 .updateViaNewSession(evita);
-        // define a new product
+        // define schema by creating the entities with data
         evita.updateCatalog(
                 "evita-tutorial",
                 session -> {
