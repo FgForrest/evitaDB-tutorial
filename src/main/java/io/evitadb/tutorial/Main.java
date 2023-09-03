@@ -23,14 +23,18 @@ public class Main {
         );
 
         System.out.println("evitaDB connected ... discovering catalogs:");
+        // fetch all catalog names present in the evitaDB server
         final Set<String> catalogNames = evita.getCatalogNames();
         if (catalogNames.isEmpty()) {
+            // for initial evitaDB server setup, there should be no catalogs present
             System.out.println("\t- No catalogs found");
         } else {
+            // in case of evitaDB with existing data, there should be some catalogs present
             for (String catalogName : catalogNames) {
                 System.out.println("\t- Catalog: " + catalogName);
             }
         }
+        // close the connection
         evita.close();
         System.out.println("evitaDB connection closed");
     }
