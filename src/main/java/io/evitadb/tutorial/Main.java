@@ -1,7 +1,6 @@
 package io.evitadb.tutorial;
 
 import io.evitadb.api.EvitaContract;
-import io.evitadb.api.requestResponse.schema.Cardinality;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
@@ -27,55 +26,18 @@ public class Main {
         // define new catalog
         evita.defineCatalog("evita-tutorial")
                 .withDescription("This is a tutorial catalog.")
-                // define brand schema
-                .withEntitySchema(
-                        "Brand",
-                        whichIs -> whichIs.withDescription("A manufacturer of products.")
-                                .withAttribute(
-                                        "name", String.class,
-                                        thatIs -> thatIs.localized().filterable().sortable()
-                                )
-                )
-                // define category schema
-                .withEntitySchema(
-                        "Category",
-                        whichIs -> whichIs.withDescription("A category of products.")
-                                .withAttribute(
-                                        "name", String.class,
-                                        thatIs -> thatIs.localized().filterable().sortable()
-                                )
-                                .withHierarchy()
-                )
-                // define product schema
-                .withEntitySchema(
-                        "Product",
-                        whichIs -> whichIs.withDescription("A product in inventory.")
-                                .withAttribute(
-                                        "name", String.class,
-                                        thatIs -> thatIs.localized().filterable().sortable()
-                                )
-                                .withAttribute(
-                                        "cores", Integer.class,
-                                        thatIs -> thatIs.withDescription("Number of CPU cores.")
-                                                .filterable()
-                                )
-                                .withAttribute(
-                                        "graphics", String.class,
-                                        thatIs -> thatIs.withDescription("Graphics card.")
-                                                .filterable()
-                                )
-                                .withPrice()
-                                .withReferenceToEntity(
-                                        "brand", "Brand", Cardinality.EXACTLY_ONE,
-                                        thatIs -> thatIs.indexed()
-                                )
-                                .withReferenceToEntity(
-                                        "categories", "Category", Cardinality.ZERO_OR_MORE,
-                                        thatIs -> thatIs.indexed()
-                                )
-                )
-                // and now push all the definitions (mutations) to the server
                 .updateViaNewSession(evita);
+
+        // define entity schemas by Java interfaces
+        evita.updateCatalog(
+                "evita-tutorial",
+                session -> {
+                    session.defineEntitySchemaFromModelClass(Brand.class);
+                    session.defineEntitySchemaFromModelClass(Category.class);
+                    session.defineEntitySchemaFromModelClass(Product.class);
+                }
+        );
+
         // close the connection
         evita.close();
         System.out.println("evitaDB connection closed");
