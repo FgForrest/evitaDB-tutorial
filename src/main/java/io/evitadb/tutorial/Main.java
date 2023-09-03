@@ -23,18 +23,24 @@ public class Main {
         );
 
         System.out.println("evitaDB connected ... creating new catalog `evita-tutorial`:");
+        // let's create a new catalog with a description
         evita.defineCatalog("evita-tutorial")
                 .withDescription("This is a tutorial catalog.")
                 .updateViaNewSession(evita);
+
         System.out.println("Catalog `evita-tutorial` created, listing all catalogs:");
+        // list all catalogs
         final Set<String> catalogNames = evita.getCatalogNames();
         if (catalogNames.isEmpty()) {
+            // because we've just defined a new catalog this should never happen
             System.out.println("\t- No catalogs found");
         } else {
+            // list all catalogs including the newly created one
             for (String catalogName : catalogNames) {
                 System.out.println("\t- Catalog: " + catalogName);
             }
         }
+        // close the connection
         evita.close();
         System.out.println("evitaDB connection closed");
     }
