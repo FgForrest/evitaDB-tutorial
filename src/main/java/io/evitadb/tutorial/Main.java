@@ -9,6 +9,12 @@ import io.evitadb.driver.config.EvitaClientConfiguration;
  * This example class shows how to create evitaDB client and connect to the server.
  * It lists all catalogs available on the server and closes the connection.
  *
+ * Prior to this class run following command on the command line to start evitaDB server:
+ *
+ * <pre>
+ * docker run --name evitadb -i --rm --net=host index.docker.io/evitadb/evitadb:latest
+ * </pre>
+ *
  * @author Jan Novotný (novotny@fg.cz), FG Forrest a.s. (c) 2023
  */
 public class Main {
