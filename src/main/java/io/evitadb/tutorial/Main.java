@@ -84,6 +84,8 @@ public class Main {
                                     11
                             )
                             .upsertVia(session);
+                    // TODO: temporary workaround until evitaLab supports warm-up state
+                    session.goLiveAndClose();
                 }
         );
         // close the connection
