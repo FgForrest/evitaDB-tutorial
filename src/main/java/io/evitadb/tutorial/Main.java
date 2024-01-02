@@ -35,6 +35,9 @@ public class Main {
                     session.defineEntitySchemaFromModelClass(Brand.class);
                     session.defineEntitySchemaFromModelClass(Category.class);
                     session.defineEntitySchemaFromModelClass(Product.class);
+
+                    // TODO: temporary workaround until evitaLab supports warm-up state
+                    session.goLiveAndClose();
                 }
         );
 
