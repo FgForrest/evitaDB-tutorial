@@ -1,11 +1,13 @@
 package io.evitadb.tutorial;
 
 import io.evitadb.api.requestResponse.data.PriceContract;
+import io.evitadb.api.requestResponse.data.SealedInstance;
 import io.evitadb.api.requestResponse.data.annotation.Attribute;
 import io.evitadb.api.requestResponse.data.annotation.Entity;
 import io.evitadb.api.requestResponse.data.annotation.Reference;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -17,7 +19,10 @@ import java.util.List;
     name = "Product",
     description = "A product in inventory."
 )
-public interface Product {
+public interface Product extends Serializable, SealedInstance<Product, ProductEditor> {
+
+    String REFERENCE_BRAND = "brand";
+    String REFERENCE_CATEGORIES = "categories";
 
     /**
      * Name of the product.
@@ -28,7 +33,8 @@ public interface Product {
             description = "Name of the product.",
             localized = true,
             filterable = true,
-            sortable = true
+            sortable = true,
+            representative = true
     )
     @Nonnull
     String getName();
@@ -69,7 +75,7 @@ public interface Product {
      * @return brand of the product
      */
     @Reference(
-            name = "brand",
+            name = REFERENCE_BRAND,
             description = "Brand of the product.",
             entity = Brand.ENTITY_NAME,
             allowEmpty = false,
@@ -83,7 +89,7 @@ public interface Product {
      * @return categories the product belongs to
      */
     @Reference(
-            name = "categories",
+            name = REFERENCE_CATEGORIES,
             description = "Categories the product belongs to.",
             entity = Category.ENTITY_NAME,
             indexed = true

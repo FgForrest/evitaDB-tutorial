@@ -1,10 +1,12 @@
 package io.evitadb.tutorial;
 
+import io.evitadb.api.requestResponse.data.SealedInstance;
 import io.evitadb.api.requestResponse.data.annotation.Attribute;
 import io.evitadb.api.requestResponse.data.annotation.Entity;
 import io.evitadb.api.requestResponse.data.annotation.ParentEntity;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.Optional;
 
 import static io.evitadb.tutorial.Category.ENTITY_NAME;
@@ -18,7 +20,7 @@ import static io.evitadb.tutorial.Category.ENTITY_NAME;
     name = ENTITY_NAME,
     description = "A category of products."
 )
-public interface Category {
+public interface Category extends Serializable, SealedInstance<Category, CategoryEditor> {
 
     String ENTITY_NAME = "Category";
 
@@ -31,7 +33,8 @@ public interface Category {
         description = "Name of the product category.",
         localized = true,
         filterable = true,
-        sortable = true
+        sortable = true,
+        representative = true
     )
     @Nonnull
     String getName();
