@@ -1,11 +1,13 @@
 package io.evitadb.tutorial;
 
+import io.evitadb.api.CommitProgress;
 import io.evitadb.api.EvitaContract;
 import io.evitadb.api.requestResponse.data.structure.EntityReference;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.evitadb.api.query.Query.query;
 import static io.evitadb.api.query.QueryConstraints.*;
@@ -22,7 +24,7 @@ public class Main {
         final EvitaContract evita = new EvitaClient(
                 EvitaClientConfiguration.builder()
                         .host("localhost")
-                        .port(5556)
+                        .port(5555)
                         .build()
         );
 
@@ -42,7 +44,6 @@ public class Main {
                     session.defineEntitySchemaFromModelClass(Category.class);
                     session.defineEntitySchemaFromModelClass(Product.class);
 
-                    // TODO: temporary workaround until evitaLab supports warm-up state
                     session.goLiveAndClose();
                 }
         );
@@ -50,14 +51,8 @@ public class Main {
         // create some data via custom contracts
         final int productId = setUpNewProduct(evita);
 
-        // now read the product and print its data to console
-        readProductAndPrintToConsole(evita, productId);
-
         // if we want to update the product, we can do it like this
         updateExistingProduct(evita, productId);
-
-        // now read the updated product again and print its data to console
-        readProductAndPrintToConsole(evita, productId);
 
         // close the connection
         evita.close();
@@ -65,7 +60,8 @@ public class Main {
     }
 
     private static int setUpNewProduct(EvitaContract evita) {
-        return evita.updateCatalog(
+        final AtomicInteger productId = new AtomicInteger();
+        final CommitProgress commitProgress = evita.updateCatalogAsync(
                 "evita-tutorial",
                 session -> {
                     System.out.print("evitaDB ... creating Apple brand ...");
@@ -93,55 +89,85 @@ public class Main {
                             .upsertVia(session);
                     System.out.println(" ok.");
 
-                    return productRef.getPrimaryKey();
+                    productId.set(productRef.getPrimaryKey());
                 }
         );
+
+        commitProgress.onConflictResolved()
+                .thenAccept(
+                        commitVersions -> System.out.println(
+                                "Tx accepted, changes will be visible in version: " + commitVersions.catalogVersion() + "."
+                        )
+                );
+        commitProgress.onWalAppended()
+                .thenAccept(commitVersions -> System.out.println("Tx written to WAL."));
+
+        // wait for the commit to be visible and return assigned productId
+        commitProgress.onChangesVisible()
+            .thenAcceptAsync(
+            commitVersions -> {
+                System.out.println("Tx changes visible to all now.");
+                // now we can safely read the product
+                evita.queryCatalog(
+                    "evita-tutorial",
+                    session -> {
+                        // now read the updated product again and print its data to console
+                        readProductAndPrintToConsole(evita, productId.get());
+                    }
+                );
+            }
+        )
+            // wait until previous block is finished
+            .toCompletableFuture()
+            .join();
+
+        return productId.get();
     }
 
     private static void readProductAndPrintToConsole(EvitaContract evita, int productId) {
-    evita.queryCatalog(
-            "evita-tutorial",
-            session -> {
-                final Product product = session.queryOne(
-                                query(
-                                        filterBy(
-                                                entityPrimaryKeyInSet(productId),
-                                                entityLocaleEquals(Locale.ENGLISH)
-                                        ),
-                                        require(
-                                                entityFetch(
-                                                        attributeContentAll(),
-                                                        referenceContent(
-                                                                Product.REFERENCE_BRAND,
-                                                                entityFetch(attributeContentAll())
-                                                        ),
-                                                        referenceContent(
-                                                                Product.REFERENCE_CATEGORIES,
-                                                                entityFetch(attributeContentAll())
-                                                        )
-                                                )
-                                        )
-                                ),
-                                Product.class
-                        )
-                        .orElseThrow(
-                                () -> new IllegalStateException("Product with id " + productId + " not found.")
-                        );
+        evita.queryCatalog(
+                "evita-tutorial",
+                session -> {
+                    final Product product = session.queryOne(
+                                    query(
+                                            filterBy(
+                                                    entityPrimaryKeyInSet(productId),
+                                                    entityLocaleEquals(Locale.ENGLISH)
+                                            ),
+                                            require(
+                                                    entityFetch(
+                                                            attributeContentAll(),
+                                                            referenceContent(
+                                                                    Product.REFERENCE_BRAND,
+                                                                    entityFetch(attributeContentAll())
+                                                            ),
+                                                            referenceContent(
+                                                                    Product.REFERENCE_CATEGORIES,
+                                                                    entityFetch(attributeContentAll())
+                                                            )
+                                                    )
+                                            )
+                                    ),
+                                    Product.class
+                            )
+                            .orElseThrow(
+                                    () -> new IllegalStateException("Product with id " + productId + " not found.")
+                            );
 
-                System.out.println("Product name: " + product.getName());
-                System.out.println("Product cores: " + product.getCores());
-                System.out.println("Product graphics: " + product.getGraphics());
-                System.out.println("Product brand: " + product.getBrand().getName());
-                System.out.println(
-                        "Product categories: " +
-                                product.getCategories()
-                                        .stream()
-                                        .map(Category::getName)
-                                        .reduce((a, b) -> a + ", " + b)
-                                        .orElse("<none>")
-                );
-            }
-    );
+                    System.out.println("Product name: " + product.getName());
+                    System.out.println("Product cores: " + product.getCores());
+                    System.out.println("Product graphics: " + product.getGraphics());
+                    System.out.println("Product brand: " + product.getBrand().getName());
+                    System.out.println(
+                            "Product categories: " +
+                                    product.getCategories()
+                                            .stream()
+                                            .map(Category::getName)
+                                            .reduce((a, b) -> a + ", " + b)
+                                            .orElse("<none>")
+                    );
+                }
+        );
     }
 
     private static void updateExistingProduct(EvitaContract evita, int productId) {
