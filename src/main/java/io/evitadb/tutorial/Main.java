@@ -23,7 +23,6 @@ public class Main {
         final EvitaContract evita = new EvitaClient(
                 EvitaClientConfiguration.builder()
                         .host("localhost")
-                        .port(5556)
                         .build()
         );
 
@@ -83,13 +82,7 @@ public class Main {
                 // and now push all the definitions (mutations) to the server
                 .updateViaNewSession(evita);
 
-        // TODO: temporary workaround until evitaLab supports warm-up state
-        evita.updateCatalog(
-                "evita-tutorial",
-                session -> {
-                    session.goLiveAndClose();
-                }
-        );
+        System.out.println("- catalog `evita-tutorial` created with predefined schema");
 
         // close the connection
         evita.close();
