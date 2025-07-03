@@ -27,7 +27,6 @@ public class Main {
         final EvitaContract evita = new EvitaClient(
                 EvitaClientConfiguration.builder()
                         .host("localhost")
-                        .port(5556)
                         .build()
         );
 
@@ -38,6 +37,7 @@ public class Main {
         evita.defineCatalog("evita-tutorial")
                 .withDescription("This is a tutorial catalog.")
                 .updateViaNewSession(evita);
+        System.out.println("- evita-tutorial catalog created");
         // define schema by creating the entities with data
         evita.updateCatalog(
                 "evita-tutorial",
@@ -84,10 +84,9 @@ public class Main {
                                     11
                             )
                             .upsertVia(session);
-                    // TODO: temporary workaround until evitaLab supports warm-up state
-                    session.goLiveAndClose();
                 }
         );
+        System.out.println("- evita-tutorial catalog schema created implicitly by creating a product, brand and category entities");
         // close the connection
         evita.close();
         System.out.println("evitaDB connection closed");
