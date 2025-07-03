@@ -19,7 +19,7 @@
 		<dependency>
 			<groupId>io.evitadb</groupId>
 			<artifactId>evita_java_driver</artifactId>
-			<version>2025.4-SNAPSHOT</version>
+			<version>[2025.4.0,2025.4.999]</version>
 		</dependency>
 
 		<!-- Byte Buddy for manipulation with Java contracts -->
