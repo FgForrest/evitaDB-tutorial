@@ -2,12 +2,13 @@ package io.evitadb.tutorial;
 
 import io.evitadb.api.requestResponse.data.PriceContract;
 import io.evitadb.api.requestResponse.data.SealedInstance;
-import io.evitadb.api.requestResponse.data.annotation.Attribute;
-import io.evitadb.api.requestResponse.data.annotation.Entity;
-import io.evitadb.api.requestResponse.data.annotation.Reference;
+import io.evitadb.api.requestResponse.data.annotation.*;
+import io.evitadb.api.requestResponse.schema.dto.ReferenceIndexType;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.List;
 
 /**
@@ -65,8 +66,21 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
 
     /**
      * Price the product can be sold for.
+     */
+    @Price(priceList = "basic")
+    @Nonnull ProductEditor setBasicPrice(
+        @Nonnull BigDecimal priceWithoutTax,
+        @Nonnull BigDecimal priceWithTax,
+        @Nonnull BigDecimal taxRate,
+        @Nonnull Currency currency,
+        int priceId
+    );
+
+    /**
+     * Price the product can be sold for.
      * @return price for sale
      */
+    @PriceForSale
     @Nonnull
     PriceContract getPriceForSale();
 
@@ -79,7 +93,7 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
             description = "Brand of the product.",
             entity = Brand.ENTITY_NAME,
             allowEmpty = false,
-            indexed = true
+            indexed = ReferenceIndexType.FOR_FILTERING
     )
     @Nonnull
     Brand getBrand();
@@ -92,7 +106,7 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
             name = REFERENCE_CATEGORIES,
             description = "Categories the product belongs to.",
             entity = Category.ENTITY_NAME,
-            indexed = true
+            indexed = ReferenceIndexType.FOR_FILTERING
     )
     @Nonnull
     List<Category> getCategories();

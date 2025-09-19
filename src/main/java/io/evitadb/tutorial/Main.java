@@ -1,10 +1,13 @@
 package io.evitadb.tutorial;
 
 import io.evitadb.api.EvitaContract;
+import io.evitadb.api.query.require.PriceContentMode;
 import io.evitadb.api.requestResponse.data.structure.EntityReference;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
+import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.Locale;
 
 import static io.evitadb.api.query.Query.query;
@@ -32,6 +35,14 @@ public class Main {
         evita.defineCatalog("evita-tutorial")
             .withDescription("This is a tutorial catalog.")
             .updateViaNewSession(evita);
+
+        // define entity schemas by Java interfaces
+        evita.updateCatalog(
+            "evita-tutorial",
+            session -> {
+                session.goLiveAndClose();
+            }
+        );
 
         System.out.println("- catalog `evita-tutorial` created, now defining entity schemas");
 
@@ -90,6 +101,7 @@ public class Main {
                     .setGraphics("A14 Bionic")
                     .setBrandId(appleBrandRef.getPrimaryKey())
                     .addCategoryId(cellPhonesRef.getPrimaryKey())
+                    .setBasicPrice(BigDecimal.TEN, BigDecimal.TEN, BigDecimal.ZERO, Currency.getInstance("EUR"), 1)
                     .upsertVia(session);
                 System.out.println(" ok.");
 
@@ -108,11 +120,14 @@ public class Main {
                         query(
                             filterBy(
                                 entityPrimaryKeyInSet(productId),
-                                entityLocaleEquals(Locale.ENGLISH)
+                                entityLocaleEquals(Locale.ENGLISH),
+                                priceInPriceLists("basic"),
+                                priceInCurrency("EUR")
                             ),
                             require(
                                 entityFetch(
                                     attributeContentAll(),
+                                    priceContent(PriceContentMode.RESPECTING_FILTER),
                                     referenceContent(
                                         Product.REFERENCE_BRAND,
                                         entityFetch(attributeContentAll())
@@ -131,6 +146,7 @@ public class Main {
                     );
 
                 System.out.println("\tProduct name: " + product.getName());
+                System.out.println("\tSelling price with VAT: " + product.getPriceForSale().priceWithTax() + " " + product.getPriceForSale().currency());
                 System.out.println("\tProduct cores: " + product.getCores());
                 System.out.println("\tProduct graphics: " + product.getGraphics());
                 System.out.println("\tProduct brand: " + product.getBrand().getName());
