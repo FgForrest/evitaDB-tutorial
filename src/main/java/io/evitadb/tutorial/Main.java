@@ -2,7 +2,7 @@ package io.evitadb.tutorial;
 
 import io.evitadb.api.CommitProgress;
 import io.evitadb.api.EvitaContract;
-import io.evitadb.api.requestResponse.data.structure.EntityReference;
+import io.evitadb.api.requestResponse.data.EntityReferenceContract;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
@@ -70,21 +70,21 @@ public class Main {
             session -> {
                 System.out.print("- creating Apple brand ...");
                 // create a new brand
-                final EntityReference appleBrandRef = session.createNewEntity(BrandEditor.class)
+                final EntityReferenceContract appleBrandRef = session.createNewEntity(BrandEditor.class)
                     .setName("Apple", Locale.ENGLISH)
                     .upsertVia(session);
                 System.out.println(" ok.");
 
                 System.out.print("- creating Cell phones category ...");
                 // create a new category
-                final EntityReference cellPhonesRef = session.createNewEntity(CategoryEditor.class)
+                final EntityReferenceContract cellPhonesRef = session.createNewEntity(CategoryEditor.class)
                     .setName("Cell phones", Locale.ENGLISH)
                     .upsertVia(session);
                 System.out.println(" ok.");
 
                 System.out.print("- creating iPhone 12 product ...");
                 // create a new product linked to the brand and category
-                final EntityReference productRef = session.createNewEntity(ProductEditor.class)
+                final EntityReferenceContract productRef = session.createNewEntity(ProductEditor.class)
                     .setName("iPhone 12", Locale.ENGLISH)
                     .setCores(6)
                     .setGraphics("A14 Bionic")
