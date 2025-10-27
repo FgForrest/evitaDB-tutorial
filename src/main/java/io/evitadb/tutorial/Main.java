@@ -2,6 +2,8 @@ package io.evitadb.tutorial;
 
 import io.evitadb.api.CommitProgress;
 import io.evitadb.api.EvitaContract;
+import io.evitadb.api.requestResponse.cdc.ChangeCaptureContent;
+import io.evitadb.api.requestResponse.cdc.ChangeSystemCaptureRequest;
 import io.evitadb.api.requestResponse.data.EntityReferenceContract;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
@@ -13,19 +15,40 @@ import static io.evitadb.api.query.Query.query;
 import static io.evitadb.api.query.QueryConstraints.*;
 
 /**
- * This example class shows how to create evitaDB client and connect to the server.
- * It lists all catalogs available on the server and closes the connection.
+ * This example class demonstrates Change Data Capture (CDC) functionality in evitaDB.
+ * It shows how to:
+ * <ul>
+ *     <li>Connect to evitaDB server and register CDC listeners at system and catalog levels</li>
+ *     <li>Create a catalog and entity schemas</li>
+ *     <li>Create and update entities asynchronously with commit progress tracking</li>
+ *     <li>Monitor CDC events for all database changes</li>
+ * </ul>
  *
  * @author Jan Novotný (novotny@fg.cz), FG Forrest a.s. (c) 2023
  */
 public class Main {
 
+    /**
+     * Main entry point demonstrating CDC functionality in evitaDB.
+     * Sets up CDC listeners, creates a catalog with entity schemas, creates and updates
+     * a product entity, and monitors all changes through CDC events.
+     *
+     * @param args command line arguments (not used)
+     * @throws Exception if any error occurs during execution
+     */
     public static void main(String[] args) throws Exception {
         final EvitaContract evita = new EvitaClient(
             EvitaClientConfiguration.builder()
                 .host("localhost")
                 .build()
         );
+
+        final SystemCaptureConsoleWritingSubscriber engineSubscription = new SystemCaptureConsoleWritingSubscriber(evita);
+        evita.registerSystemChangeCapture(
+            ChangeSystemCaptureRequest.builder()
+                .content(ChangeCaptureContent.BODY)
+                .build()
+        ).subscribe(engineSubscription);
 
         System.out.println("evitaDB connected ... defining schema");
         // clear existing catalog to start with fresh new one
@@ -58,11 +81,28 @@ public class Main {
         // if we want to update the product, we can do it like this
         updateExistingProduct(evita, productId);
 
+        // finally delete the catalog again to clean up
+        System.out.println("- deleting catalog `evita-tutorial` to clean up ...");
+        evita.deleteCatalogIfExists("evita-tutorial");
+
         // close the connection
         evita.close();
         System.out.println("evitaDB connection closed");
     }
 
+    /**
+     * Creates a new product with associated brand and category entities asynchronously.
+     * This method demonstrates:
+     * <ul>
+     *     <li>Asynchronous catalog updates using {@code updateCatalogAsync}</li>
+     *     <li>Creating related entities (brand, category) and linking them to the product</li>
+     *     <li>Tracking commit progress through various stages (conflict resolution, WAL append, visibility)</li>
+     *     <li>Waiting for changes to become visible before reading the created entity</li>
+     * </ul>
+     *
+     * @param evita the evitaDB client instance
+     * @return the primary key of the newly created product
+     */
     private static int setUpNewProduct(EvitaContract evita) {
         final AtomicInteger productId = new AtomicInteger();
         final CommitProgress commitProgress = evita.updateCatalogAsync(
@@ -128,6 +168,14 @@ public class Main {
         return productId.get();
     }
 
+    /**
+     * Queries and displays a product entity with all its associated data.
+     * Fetches the product along with its brand and category references, including
+     * all attributes in English locale, and prints the information to the console.
+     *
+     * @param evita the evitaDB client instance
+     * @param productId the primary key of the product to retrieve
+     */
     private static void readProductAndPrintToConsole(EvitaContract evita, int productId) {
         System.out.println("- reading product with id " + productId + " ...");
         evita.queryCatalog(
@@ -175,6 +223,14 @@ public class Main {
         );
     }
 
+    /**
+     * Updates an existing product entity by modifying its name and attributes.
+     * Demonstrates the pattern of fetching an entity, opening it for modification,
+     * making changes, and persisting them back to the database.
+     *
+     * @param evita the evitaDB client instance
+     * @param productId the primary key of the product to update
+     */
     private static void updateExistingProduct(EvitaContract evita, int productId) {
         evita.updateCatalog(
             "evita-tutorial",
