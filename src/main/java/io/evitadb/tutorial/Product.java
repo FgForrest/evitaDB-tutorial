@@ -4,6 +4,7 @@ import io.evitadb.api.requestResponse.data.PriceContract;
 import io.evitadb.api.requestResponse.data.annotation.Attribute;
 import io.evitadb.api.requestResponse.data.annotation.Entity;
 import io.evitadb.api.requestResponse.data.annotation.Reference;
+import io.evitadb.api.requestResponse.schema.dto.ReferenceIndexType;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -73,7 +74,7 @@ public interface Product {
             description = "Brand of the product.",
             entity = Brand.ENTITY_NAME,
             allowEmpty = false,
-            indexed = true
+            indexed = ReferenceIndexType.FOR_FILTERING
     )
     @Nonnull
     Brand getBrand();
@@ -86,7 +87,7 @@ public interface Product {
             name = "categories",
             description = "Categories the product belongs to.",
             entity = Category.ENTITY_NAME,
-            indexed = true
+            indexed = ReferenceIndexType.FOR_FILTERING
     )
     @Nonnull
     List<Category> getCategories();
