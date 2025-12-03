@@ -1,16 +1,29 @@
 package io.evitadb.tutorial;
 
 import io.evitadb.api.EvitaContract;
+import io.evitadb.api.EvitaSessionContract;
 import io.evitadb.api.query.require.PriceContentMode;
 import io.evitadb.api.requestResponse.data.EntityReferenceContract;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.net.JarURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import static io.evitadb.api.query.Query.query;
 import static io.evitadb.api.query.QueryConstraints.*;
@@ -115,6 +128,86 @@ public class Main {
             "Intel Iris Xe", "Intel UHD Graphics", "Intel HD Graphics"
     };
 
+    // Data examples resources
+    private static final String RESOURCE_DATA_DIR = "META-INF/dataExamples";
+    private static List<String> MARKDOWN_FILES;
+    private static List<String> HTML_FILES;
+    private static List<String> JSON_FILES;
+
+    private static synchronized void ensureResourceFileListsLoaded() {
+        if (MARKDOWN_FILES != null && HTML_FILES != null && JSON_FILES != null) return;
+        MARKDOWN_FILES = listResourceFilesByExtension(".md");
+        HTML_FILES = listResourceFilesByExtension(".html");
+        JSON_FILES = listResourceFilesByExtension(".json");
+    }
+
+    private static List<String> listResourceFilesByExtension(String extension) {
+        try {
+            URL dirUrl = Main.class.getClassLoader().getResource(RESOURCE_DATA_DIR);
+            if (dirUrl == null) {
+                return Collections.emptyList();
+            }
+            String protocol = dirUrl.getProtocol();
+            if ("file".equals(protocol)) {
+                try {
+                    URI uri = dirUrl.toURI();
+                    java.nio.file.Path dirPath = java.nio.file.Paths.get(uri);
+                    try (java.util.stream.Stream<java.nio.file.Path> paths = java.nio.file.Files.list(dirPath)) {
+                        return paths
+                                .filter(Files::isRegularFile)
+                                .map(p -> p.getFileName().toString())
+                                .filter(name -> name.toLowerCase(Locale.ROOT).endsWith(extension))
+                                .map(name -> RESOURCE_DATA_DIR + "/" + name)
+                                .collect(Collectors.toList());
+                    }
+                } catch (URISyntaxException e) {
+                    return Collections.emptyList();
+                }
+            } else if ("jar".equals(protocol)) {
+                try {
+                    JarURLConnection jarConnection = (JarURLConnection) dirUrl.openConnection();
+                    try (JarFile jarFile = jarConnection.getJarFile()) {
+                        List<String> result = new ArrayList<>();
+                        Enumeration<JarEntry> entries = jarFile.entries();
+                        while (entries.hasMoreElements()) {
+                            JarEntry entry = entries.nextElement();
+                            String name = entry.getName();
+                            if (!entry.isDirectory() && name.startsWith(RESOURCE_DATA_DIR + "/") && name.toLowerCase(Locale.ROOT).endsWith(extension)) {
+                                result.add(name);
+                            }
+                        }
+                        return result;
+                    }
+                } catch (IOException e) {
+                    return Collections.emptyList();
+                }
+            } else {
+                // Fallback: attempt to read known files by trying both extensions
+                return Collections.emptyList();
+            }
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private static String readResourceAsString(String resourcePath) {
+        if (resourcePath == null) return null;
+        try (InputStream is = Main.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            if (is == null) return null;
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+                return br.lines().collect(Collectors.joining("\n"));
+            }
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static String pickRandomContent(List<String> files, Random random) {
+        if (files == null || files.isEmpty()) return null;
+        String path = files.get(random.nextInt(files.size()));
+        return readResourceAsString(path);
+    }
+
     private static final Currency[] CURRENCIES = {
             Currency.getInstance("USD"), // US Dollar
             Currency.getInstance("EUR"), // Euro
@@ -146,9 +239,7 @@ public class Main {
         // define entity schemas by Java interfaces
         evita.updateCatalog(
                 "evita-tutorial",
-                session -> {
-                    session.goLiveAndClose();
-                }
+            EvitaSessionContract::goLiveAndClose
         );
 
         System.out.println("- catalog `evita-tutorial` created, now defining entity schemas");
@@ -397,6 +488,15 @@ public class Main {
                             .setBrandId(randomBrand.getPrimaryKey())
                             .setBasicPrice(basePrice, priceWithTax, taxAmount, currency, 1);
 
+                    // Attach randomized example contents from resources
+                    ensureResourceFileListsLoaded();
+                    String tip = pickRandomContent(MARKDOWN_FILES, random);
+                    String idea = pickRandomContent(HTML_FILES, random);
+                    String metadata = pickRandomContent(JSON_FILES, random);
+                    if (tip != null) productEditor.setTip(tip);
+                    if (idea != null) productEditor.setIdea(idea);
+                    if (metadata != null) productEditor.setMetadata(metadata);
+
                     // Add all selected categories
                     for (EntityReferenceContract categoryRef : selectedCategories) {
                         productEditor.addCategoryId(categoryRef.getPrimaryKey());
@@ -473,37 +573,37 @@ public class Main {
         public synchronized long getTotalOperations() { return totalOperations; }
 
         public synchronized void printProgress(int productCount, int brandCount, int categoryCount) {
-            System.out.println(String.format(
-                "\nOperation #%d | Products: %d | Brands: %d | Categories: %d",
+            System.out.printf(
+                "\nOperation #%d | Products: %d | Brands: %d | Categories: %d%n",
                 totalOperations, productCount, brandCount, categoryCount
-            ));
-            System.out.println(String.format(
-                "  Product ops: %d updated, %d created, %d deleted",
+            );
+            System.out.printf(
+                "  Product ops: %d updated, %d created, %d deleted%n",
                 productUpdates, productCreates, productDeletes
-            ));
-            System.out.println(String.format(
-                "  Brand ops: %d updated, %d created, %d deleted",
+            );
+            System.out.printf(
+                "  Brand ops: %d updated, %d created, %d deleted%n",
                 brandUpdates, brandCreates, brandDeletes
-            ));
-            System.out.println(String.format(
-                "  Category ops: %d updated, %d created, %d deleted",
+            );
+            System.out.printf(
+                "  Category ops: %d updated, %d created, %d deleted%n",
                 categoryUpdates, categoryCreates, categoryDeletes
-            ));
+            );
             if (errors > 0) {
-                System.out.println(String.format("  Errors: %d", errors));
+                System.out.printf("  Errors: %d%n", errors);
             }
         }
 
         public synchronized void printFinalStatistics() {
             System.out.println("\n=== Final Statistics ===");
-            System.out.println(String.format("Total operations: %d", totalOperations));
-            System.out.println(String.format("Products: %d created, %d deleted, %d updated",
-                productCreates, productDeletes, productUpdates));
-            System.out.println(String.format("Brands: %d created, %d deleted, %d updated",
-                brandCreates, brandDeletes, brandUpdates));
-            System.out.println(String.format("Categories: %d created, %d deleted, %d updated",
-                categoryCreates, categoryDeletes, categoryUpdates));
-            System.out.println(String.format("Errors: %d", errors));
+            System.out.printf("Total operations: %d%n", totalOperations);
+            System.out.printf("Products: %d created, %d deleted, %d updated%n",
+                productCreates, productDeletes, productUpdates);
+            System.out.printf("Brands: %d created, %d deleted, %d updated%n",
+                brandCreates, brandDeletes, brandUpdates);
+            System.out.printf("Categories: %d created, %d deleted, %d updated%n",
+                categoryCreates, categoryDeletes, categoryUpdates);
+            System.out.printf("Errors: %d%n", errors);
         }
     }
 

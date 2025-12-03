@@ -65,6 +65,39 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
     String getGraphics();
 
     /**
+     * A tip for the product.
+     * @return tip for the product
+     */
+    @AssociatedData(
+        name = "tip",
+        description = "A tip for the product."
+    )
+    @Nonnull
+    String getTip();
+
+    /**
+     * An idea behind the product.
+     * @return idea behind the product
+     */
+    @AssociatedData(
+        name = "idea",
+        description = "An idea behind the product."
+    )
+    @Nonnull
+    String getIdea();
+
+    /**
+     * Metadata of the product.
+     * @return metadata of the product
+     */
+    @AssociatedData(
+        name = "metadata",
+        description = "Metadata of the product."
+    )
+    @Nonnull
+    String getMetadata();
+
+    /**
      * Price the product can be sold for.
      */
     @Price(priceList = "basic")
