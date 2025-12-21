@@ -27,6 +27,15 @@ public interface ProductEditor extends Product, InstanceEditor<Product> {
     ProductEditor setGraphics(@Nonnull String graphics);
 
     @Nonnull
+    ProductEditor setTip(@Nonnull String tip);
+
+    @Nonnull
+    ProductEditor setIdea(@Nonnull String idea);
+
+    @Nonnull
+    ProductEditor setMetadata(@Nonnull String metadata);
+
+    @Nonnull
     ProductEditor setPrice(@Nonnull PriceContract price);
 
     /**

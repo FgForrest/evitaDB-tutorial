@@ -2,13 +2,13 @@ package io.evitadb.tutorial;
 
 import io.evitadb.api.requestResponse.data.PriceContract;
 import io.evitadb.api.requestResponse.data.SealedInstance;
-import io.evitadb.api.requestResponse.data.annotation.Attribute;
-import io.evitadb.api.requestResponse.data.annotation.Entity;
-import io.evitadb.api.requestResponse.data.annotation.Reference;
+import io.evitadb.api.requestResponse.data.annotation.*;
 import io.evitadb.api.requestResponse.schema.dto.ReferenceIndexType;
 
 import javax.annotation.Nonnull;
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.List;
 
 /**
@@ -65,9 +65,55 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
     String getGraphics();
 
     /**
+     * A tip for the product.
+     * @return tip for the product
+     */
+    @AssociatedData(
+        name = "tip",
+        description = "A tip for the product."
+    )
+    @Nonnull
+    String getTip();
+
+    /**
+     * An idea behind the product.
+     * @return idea behind the product
+     */
+    @AssociatedData(
+        name = "idea",
+        description = "An idea behind the product."
+    )
+    @Nonnull
+    String getIdea();
+
+    /**
+     * Metadata of the product.
+     * @return metadata of the product
+     */
+    @AssociatedData(
+        name = "metadata",
+        description = "Metadata of the product."
+    )
+    @Nonnull
+    String getMetadata();
+
+    /**
+     * Price the product can be sold for.
+     */
+    @Price(priceList = "basic")
+    @Nonnull ProductEditor setBasicPrice(
+        @Nonnull BigDecimal priceWithoutTax,
+        @Nonnull BigDecimal priceWithTax,
+        @Nonnull BigDecimal taxRate,
+        @Nonnull Currency currency,
+        int priceId
+    );
+
+    /**
      * Price the product can be sold for.
      * @return price for sale
      */
+    @PriceForSale
     @Nonnull
     PriceContract getPriceForSale();
 
