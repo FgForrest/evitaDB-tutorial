@@ -5,7 +5,9 @@ import io.evitadb.api.EvitaSessionContract;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
+import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -91,8 +93,22 @@ public class Main {
                 + container.brandIds.size() + " brands, "
                 + container.categoryIds.size() + " categories");
 
-        // Run continuous simulation (blocks until Ctrl+C)
-        runContinuousSimulation(evita, container);
+        final AtomicBoolean running = new AtomicBoolean(true);
+        CompletableFuture.anyOf(
+            // Start the continuous simulation in a separate thread
+            CompletableFuture.runAsync(() -> runContinuousSimulation(evita, container, running)),
+            // Wait for user input to terminate
+            CompletableFuture.runAsync(() -> {
+                // wait for user input before closing
+                System.out.println("\nPress enter to finish...");
+                try {
+                    System.in.read();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                running.set(false);
+            })
+        ).join();
 
         // Close the connection (after shutdown hook)
         evita.close();
@@ -107,9 +123,8 @@ public class Main {
      * @param evita     the evitaDB client connection
      * @param container container holding entity ID queues for the simulation
      */
-    private static void runContinuousSimulation(EvitaContract evita, EntityIdContainer container) {
+    private static void runContinuousSimulation(EvitaContract evita, EntityIdContainer container, AtomicBoolean running) {
         final OperationStatistics stats = new OperationStatistics();
-        final AtomicBoolean running = new AtomicBoolean(true);
 
         // Add shutdown hook for graceful cleanup
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -118,7 +133,7 @@ public class Main {
             stats.printFinalStatistics();
         }));
 
-        System.out.println("\n=== Starting continuous simulation (Press Ctrl+C to stop) ===\n");
+        System.out.println("\n=== Starting continuous simulation (Press Enter to stop) ===\n");
 
         while (running.get()) {
             try {

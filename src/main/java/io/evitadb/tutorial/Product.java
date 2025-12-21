@@ -27,72 +27,81 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
 
     /**
      * Name of the product.
+     *
      * @return name of the product
      */
     @Attribute(
-            name = "name",
-            description = "Name of the product.",
-            localized = true,
-            filterable = true,
-            sortable = true,
-            representative = true
+        name = "name",
+        description = "Name of the product.",
+        localized = true,
+        filterable = true,
+        sortable = true,
+        representative = true
     )
     @Nonnull
     String getName();
 
     /**
      * Number of CPU cores in the laptop.
+     *
      * @return number of CPU cores
      */
     @Attribute(
-            name = "cores",
-            description = "Number of CPU cores.",
-            filterable = true
+        name = "cores",
+        description = "Number of CPU cores.",
+        filterable = true
     )
     @Nonnull
     Integer getCores();
 
     /**
      * Description of the graphics card in the laptop.
+     *
      * @return graphics card
      */
     @Attribute(
-            name = "graphics",
-            description = "Graphics card.",
-            filterable = true
+        name = "graphics",
+        description = "Graphics card.",
+        filterable = true
     )
     @Nonnull
     String getGraphics();
 
     /**
      * A tip for the product.
+     *
      * @return tip for the product
      */
     @AssociatedData(
         name = "tip",
-        description = "A tip for the product."
+        description = "A tip for the product.",
+        nullable = true
     )
     @Nonnull
     String getTip();
 
     /**
      * An idea behind the product.
+     *
      * @return idea behind the product
      */
     @AssociatedData(
         name = "idea",
-        description = "An idea behind the product."
+        description = "An idea behind the product.",
+        nullable = true
     )
     @Nonnull
     String getIdea();
 
     /**
      * Metadata of the product.
+     *
      * @return metadata of the product
      */
     @AssociatedData(
         name = "metadata",
-        description = "Metadata of the product."
+        description = "Metadata of the product.",
+        nullable = true
     )
     @Nonnull
     String getMetadata();
@@ -101,7 +110,8 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
      * Price the product can be sold for.
      */
     @Price(priceList = "basic")
-    @Nonnull ProductEditor setBasicPrice(
+    @Nonnull
+    ProductEditor setBasicPrice(
         @Nonnull BigDecimal priceWithoutTax,
         @Nonnull BigDecimal priceWithTax,
         @Nonnull BigDecimal taxRate,
@@ -111,6 +121,7 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
 
     /**
      * Price the product can be sold for.
+     *
      * @return price for sale
      */
     @PriceForSale
@@ -119,27 +130,29 @@ public interface Product extends Serializable, SealedInstance<Product, ProductEd
 
     /**
      * Brand of the product.
+     *
      * @return brand of the product
      */
     @Reference(
-            name = REFERENCE_BRAND,
-            description = "Brand of the product.",
-            entity = Brand.ENTITY_NAME,
-            allowEmpty = false,
-            indexed = ReferenceIndexType.FOR_FILTERING
+        name = REFERENCE_BRAND,
+        description = "Brand of the product.",
+        entity = Brand.ENTITY_NAME,
+        allowEmpty = false,
+        indexed = ReferenceIndexType.FOR_FILTERING
     )
     @Nonnull
     Brand getBrand();
 
     /**
      * Categories the product belongs to.
+     *
      * @return categories the product belongs to
      */
     @Reference(
-            name = REFERENCE_CATEGORIES,
-            description = "Categories the product belongs to.",
-            entity = Category.ENTITY_NAME,
-            indexed = ReferenceIndexType.FOR_FILTERING
+        name = REFERENCE_CATEGORIES,
+        description = "Categories the product belongs to.",
+        entity = Category.ENTITY_NAME,
+        indexed = ReferenceIndexType.FOR_FILTERING
     )
     @Nonnull
     List<Category> getCategories();

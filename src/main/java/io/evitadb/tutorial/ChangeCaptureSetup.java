@@ -6,6 +6,9 @@ import io.evitadb.api.requestResponse.cdc.ChangeSystemCaptureRequest;
 import io.evitadb.driver.EvitaClient;
 import io.evitadb.driver.config.EvitaClientConfiguration;
 
+import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
+
 /**
  * This example class demonstrates Change Data Capture (CDC) functionality in evitaDB.
  * It shows how to:
@@ -42,9 +45,18 @@ public class ChangeCaptureSetup {
                 .build()
         ).subscribe(engineSubscription);
 
-        // wait for user input before closing
-        System.out.println("\nPress any key to close the connection...");
-        System.in.read();
+        CompletableFuture.anyOf(
+            engineSubscription.onClose(),
+            CompletableFuture.runAsync(() -> {
+                // wait for user input before closing
+                System.out.println("\nPress enter to close the connection...");
+                try {
+                    System.in.read();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            })
+        ).join();
 
         // close the connection
         evita.close();

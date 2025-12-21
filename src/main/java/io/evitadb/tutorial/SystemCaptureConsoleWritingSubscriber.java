@@ -11,6 +11,7 @@ import io.evitadb.utils.ConsoleWriter;
 
 import javax.annotation.Nonnull;
 import java.io.Closeable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 
 /**
@@ -23,6 +24,7 @@ import java.util.concurrent.Flow;
  */
 class SystemCaptureConsoleWritingSubscriber implements Flow.Subscriber<ChangeSystemCapture>, Closeable {
     private final EvitaContract evita;
+    private final CompletableFuture<Void> onClose = new CompletableFuture<>();
     private Flow.Subscription subscription;
 
     public SystemCaptureConsoleWritingSubscriber(@Nonnull EvitaContract evita) {
@@ -94,9 +96,19 @@ class SystemCaptureConsoleWritingSubscriber implements Flow.Subscriber<ChangeSys
         ConsoleWriter.writeLine("Change capture stream completed.", ConsoleWriter.ConsoleColor.BRIGHT_YELLOW);
     }
 
+    /**
+     * Returns a CompletableFuture that completes when the subscription is closed.
+     * @return a CompletableFuture that completes on close
+     */
+    @Nonnull
+    public CompletableFuture<Void> onClose() {
+        return this.onClose;
+    }
+
     @Override
     public void close() {
         // close is called when, subscription is canceled
         ConsoleWriter.writeLine("System change capture subscription closed.", ConsoleWriter.ConsoleColor.BRIGHT_YELLOW);
+        this.onClose.complete(null);
     }
 }
